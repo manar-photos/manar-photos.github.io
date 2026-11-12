@@ -299,6 +299,8 @@
       }
       .footer-contact a:hover { text-decoration: underline; }
       .footer-contact a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+      .footer-visitors { margin-top: 0.45rem; font-size: 0.98rem; }
+      .footer-visitors .visitor-count { font-weight: 700; color: var(--ink); unicode-bidi: isolate; }
 
       /* ---------- Lightbox ---------- */
       .lightbox {
@@ -444,6 +446,7 @@
       <div class="wrap">
         <div id="footerMain">من أرشيف صوري القديمة · تصوير منار · جميع الصور من أرشيفه الشخصي</div>
         <div class="footer-contact"><span id="contactLabel">بريد التواصل</span>: <a href="mailto:manaresahmad@gmail.com">manaresahmad@gmail.com</a></div>
+        <div class="footer-visitors"><span id="visitorLabel">عدد الزوار</span>: <span class="visitor-count" id="visitorCount">—</span></div>
       </div>
     </footer>
 
@@ -557,6 +560,7 @@
           aboutSign: "— منار",
           footerMain: "من أرشيف صوري القديمة · تصوير منار · جميع الصور من أرشيفه الشخصي",
           contactLabel: "بريد التواصل",
+          visitorLabel: "عدد الزوار",
           lbLabel: "عارض الصور", lbClose: "إغلاق", lbPrev: "الصورة السابقة", lbNext: "الصورة التالية",
           viewPrefix: "عرض صورة: "
         },
@@ -581,12 +585,41 @@
           aboutSign: "— Manar",
           footerMain: "From My Old Photo Archive · Photography by Manar · All photos from his personal archive",
           contactLabel: "Contact email",
+          visitorLabel: "Visitors",
           lbLabel: "Photo viewer", lbClose: "Close", lbPrev: "Previous photo", lbNext: "Next photo",
           viewPrefix: "View photo: "
         }
       };
 
       var currentLang = "ar";
+      var visitorTotal = null;
+      function formatVisitorCount(n) {
+        if (n === null || n === undefined || isNaN(n)) { return "—"; }
+        var num = Number(n);
+        if (currentLang === "en") {
+          return num.toLocaleString("en-US");
+        }
+        var AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+        var grouped = num.toLocaleString("en-US");
+        return grouped.replace(/\d/g, function (d) { return AR_DIGITS[d]; }).replace(/,/g, "٬");
+      }
+      function renderVisitorCount() {
+        var el = document.getElementById("visitorCount");
+        if (el) { el.textContent = formatVisitorCount(visitorTotal); }
+      }
+      function loadVisitorCount() {
+        fetch("https://manar-photos.goatcounter.com/counter/TOTAL.json")
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.count !== undefined && data.count !== null) {
+              var parsed = parseInt(String(data.count).replace(/[^0-9]/g, ""), 10);
+              if (!isNaN(parsed)) { visitorTotal = parsed; }
+              else if (typeof data.count === "number") { visitorTotal = data.count; }
+            }
+            renderVisitorCount();
+          })
+          .catch(function () { renderVisitorCount(); });
+      }
       function photoTitle(p) { return currentLang === "en" && EN_PHOTOS[p.src] ? EN_PHOTOS[p.src].title : p.title; }
       function photoDate(p) { return currentLang === "en" && EN_PHOTOS[p.src] ? EN_PHOTOS[p.src].date : p.date; }
       function photoAlt(p) { return currentLang === "en" && EN_PHOTOS[p.src] ? EN_PHOTOS[p.src].alt : p.alt; }
@@ -730,6 +763,8 @@
         setText("aboutSign", t.aboutSign);
         setText("footerMain", t.footerMain);
         setText("contactLabel", t.contactLabel);
+        setText("visitorLabel", t.visitorLabel);
+        renderVisitorCount();
         lb.setAttribute("aria-label", t.lbLabel);
         document.getElementById("lbClose").setAttribute("aria-label", t.lbClose);
         document.getElementById("lbPrev").setAttribute("aria-label", t.lbPrev);
@@ -745,6 +780,8 @@
       }
       document.getElementById("btnLangAr").addEventListener("click", function () { setLanguage("ar"); });
       document.getElementById("btnLangEn").addEventListener("click", function () { setLanguage("en"); });
+      loadVisitorCount();
     </script>
+    <script data-goatcounter="https://manar-photos.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
   </body>
 </html>
